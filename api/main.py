@@ -11,9 +11,11 @@ r = redis.Redis(
     decode_responses=True
 )
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 @app.post("/jobs")
 def create_job():
@@ -36,6 +38,7 @@ def create_job():
             "error": "failed to create job",
             "details": str(e)
         }
+
 
 @app.get("/jobs/{job_id}")
 def get_job(job_id: str):
