@@ -14,8 +14,11 @@ RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt
 # Create non-root user
 RUN addgroup --system appgroup && adduser --system --group appuser
 
-# Copy installed packages and app
+# Copy installed packages
 COPY --from=builder /install /usr/local/lib/python3.12/site-packages
+# Copy binaries like uvicorn
+COPY --from=builder /install/bin /usr/local/bin
+
 COPY main.py .
 
 USER appuser
