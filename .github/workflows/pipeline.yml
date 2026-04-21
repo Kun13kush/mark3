@@ -197,9 +197,8 @@ jobs:
           cat > .env << EOF
           REDIS_HOST=redis
           REDIS_PORT=6379
-          QUEUE_NAME=job
-          JOB_EXPIRE_SECONDS=86400
           API_URL=http://api:8000
+          API_PORT=8000
           FRONTEND_PORT=3000
           EOF
 
