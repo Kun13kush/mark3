@@ -73,7 +73,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-cov fastapi redis
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          pip install httpx pytest pytest-cov
 
       - name: Run Unit Tests
         run: |
