@@ -36,4 +36,3 @@ def test_redis_delete(mock_redis):
     r = redis.Redis(host='localhost', port=6379)
     result = r.delete('key')
     assert result == 1
-
