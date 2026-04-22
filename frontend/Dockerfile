@@ -1,26 +1,15 @@
-# Stage 1 — install dependencies
-FROM node:20-alpine AS builder
+FROM node:18-alpine
+
 WORKDIR /app
-COPY package*.json ./
+COPY package.json .
+# Example: Update vulnerable packages in Alpine
 RUN apk update && apk upgrade && \
-    npm ci --only=production
+    apk add --no-cache <package-name>
 
-# Stage 2 — runtime
-FROM node:20-alpine
-WORKDIR /app
-
-RUN apk update && apk upgrade && \
-    addgroup -S appgroup && adduser -S appuser -G appgroup
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY app.js ./
-COPY views/ ./views/
-
-USER appuser
-
-EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+# For Node packages, update package.json and reinstall
+RUN npm audit fix
+RUN npm install
+RUN npm audit fix
+COPY . .
 
 CMD ["node", "app.js"]
