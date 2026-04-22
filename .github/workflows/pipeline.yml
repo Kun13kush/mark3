@@ -72,8 +72,7 @@ jobs:
 
       - name: Install API dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install -r api/requirements.txt
 
       - name: Run pytest
         run: |
