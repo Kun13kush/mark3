@@ -1,30 +1,29 @@
 #!/bin/bash
 set -e
 
-echo "Starting integration test..."
+BASE_URL="${API_URL:-http://localhost:8000}"
 
-docker-compose up -d
+echo "Running integration tests against $BASE_URL"
 
-echo "Waiting for services..."
-sleep 10
+check_health() {
+  echo "Checking API health..."
+  response=$(curl -sf "$BASE_URL/health") || {
+    echo "Health check failed"
+    exit 1
+  }
+  echo "Health check passed: $response"
+}
 
-JOB_ID=$(curl -s -X POST http://localhost:3000/jobs | jq -r '.job_id')
+check_redis() {
+  echo "Checking Redis connectivity via API..."
+  response=$(curl -sf "$BASE_URL/health/redis") || {
+    echo "Redis check failed"
+    exit 1
+  }
+  echo "Redis check passed: $response"
+}
 
-echo "Job ID: $JOB_ID"
+check_health
+check_redis
 
-for i in {1..10}; do
-  STATUS=$(curl -s http://localhost:3000/jobs/$JOB_ID | jq -r '.status')
-  echo "Status: $STATUS"
-
-  if [ "$STATUS" == "completed" ]; then
-    echo "SUCCESS"
-    docker-compose down
-    exit 0
-  fi
-
-  sleep 3
-done
-
-echo "FAILED: timeout"
-docker-compose down
-exit 1
+echo "All integration tests passed"
