@@ -44,17 +44,17 @@ jobs:
           npx eslint .
 
       - name: Lint API Dockerfile
-        uses: hadolint/hadolint-action@v3
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: api/Dockerfile
 
       - name: Lint Worker Dockerfile
-        uses: hadolint/hadolint-action@v3
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: worker/Dockerfile
 
       - name: Lint Frontend Dockerfile
-        uses: hadolint/hadolint-action@v3
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: frontend/Dockerfile
 
