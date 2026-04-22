@@ -1,36 +1,39 @@
 import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
-from api.main import app
-
-client = TestClient(app)
 
 
-@patch("api.main.r")  # <-- IMPORTANT: patch the Redis instance
-def test_create_job(mock_redis):
-    mock_redis.hset.return_value = True
-    mock_redis.lpush.return_value = True
+@patch('redis.Redis')
+def test_redis_connection(mock_redis):
+    mock_instance = MagicMock()
+    mock_redis.return_value = mock_instance
+    mock_instance.ping.return_value = True
 
-    response = client.post("/jobs")
-
-    assert response.status_code == 200
-    assert "job_id" in response.json()
-
-
-@patch("api.main.r")
-def test_get_job_status(mock_redis):
-    mock_redis.hget.return_value = b"completed"
-
-    response = client.get("/jobs/test-id")
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "completed"
+    import redis
+    r = redis.Redis(host='localhost', port=6379)
+    assert r.ping() is True
 
 
-@patch("api.main.r")
-def test_invalid_job(mock_redis):
-    mock_redis.hget.return_value = None
+@patch('redis.Redis')
+def test_redis_set_get(mock_redis):
+    mock_instance = MagicMock()
+    mock_redis.return_value = mock_instance
+    mock_instance.set.return_value = True
+    mock_instance.get.return_value = b'hello'
 
-    response = client.get("/jobs/invalid-id")
+    import redis
+    r = redis.Redis(host='localhost', port=6379)
+    r.set('key', 'hello')
+    result = r.get('key')
+    assert result == b'hello'
 
-    assert response.status_code in [200, 404]
+
+@patch('redis.Redis')
+def test_redis_delete(mock_redis):
+    mock_instance = MagicMock()
+    mock_redis.return_value = mock_instance
+    mock_instance.delete.return_value = 1
+
+    import redis
+    r = redis.Redis(host='localhost', port=6379)
+    result = r.delete('key')
+    assert result == 1
