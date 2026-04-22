@@ -65,3 +65,4 @@ Problem: .env file committed (security risk)
 Fix: Removed from repo and added to .gitignore
 
 ---
+

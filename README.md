@@ -104,3 +104,4 @@ docker-compose down
 * Redis is not exposed externally
 * All services communicate via internal Docker network
 * All configuration is environment-driven
+
