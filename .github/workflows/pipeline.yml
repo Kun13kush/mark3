@@ -249,69 +249,28 @@ jobs:
           echo "$DEPLOY_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST << 'ENDSSH'
-            set -e
-            cd ~/hng14-stage2-devops
+            cd ~/LZ/hng14-stage2-devops
             git pull origin main
-
-            PROJECT=$(docker compose config --format json 2>/dev/null \
-              | python3 -c "import sys,json; print(json.load(sys.stdin).get('name','app'))")
+            docker compose build
 
             for SERVICE in api worker frontend; do
-              echo "========================================"
-              echo "Rolling update: $SERVICE"
-              echo "========================================"
+              echo "Updating $SERVICE..."
+              docker compose up -d --no-deps --build $SERVICE
 
-              docker compose build $SERVICE
-
-              CANONICAL="${PROJECT}-${SERVICE}-1"
-              BACKUP="${CANONICAL}_backup"
-
-              OLD_ID=$(docker ps -q --filter "name=^${CANONICAL}$")
-              if [ -n "$OLD_ID" ]; then
-                echo "Renaming old container $OLD_ID -> $BACKUP"
-                docker rename "$CANONICAL" "$BACKUP"
-              fi
-
-              docker compose up -d --no-deps --force-recreate $SERVICE
-              NEW_ID=$(docker ps -q --filter "name=^${CANONICAL}$")
-
-              if [ -z "$NEW_ID" ]; then
-                echo "ERROR: New container for $SERVICE did not start."
-                if [ -n "$OLD_ID" ]; then
-                  docker rename "$BACKUP" "$CANONICAL"
-                  docker start "$CANONICAL"
-                fi
-                exit 1
-              fi
-
-              ELAPSED=0
-              HEALTHY=false
-              while [ $ELAPSED -lt 60 ]; do
-                HEALTH=$(docker inspect --format='{{.State.Health.Status}}' "$NEW_ID" 2>/dev/null || echo "none")
-                echo "  [$SERVICE] ${ELAPSED}s — health: $HEALTH"
-                if [ "$HEALTH" = "healthy" ]; then
-                  HEALTHY=true
+              SECONDS=0
+              while [ $SECONDS -lt 60 ]; do
+                STATUS=$(docker compose ps $SERVICE | grep "healthy" || true)
+                if [ -n "$STATUS" ]; then
+                  echo "$SERVICE is healthy"
                   break
                 fi
                 sleep 5
-                ELAPSED=$((ELAPSED + 5))
+                SECONDS=$((SECONDS + 5))
               done
 
-              if [ "$HEALTHY" = "true" ]; then
-                echo "$SERVICE is healthy — removing old container"
-                [ -n "$OLD_ID" ] && docker rm -f "$BACKUP" || true
-                echo "$SERVICE rolling update complete"
-              else
-                echo "ERROR: $SERVICE failed health check after 60s — rolling back"
-                docker rm -f "$CANONICAL" || true
-                if [ -n "$OLD_ID" ]; then
-                  docker rename "$BACKUP" "$CANONICAL"
-                  docker start "$CANONICAL"
-                  echo "Old $SERVICE container restored and running"
-                fi
+              if [ -z "$STATUS" ]; then
+                echo "$SERVICE failed health check, aborting"
                 exit 1
               fi
             done
-
-            echo "All services updated successfully."
           ENDSSH
